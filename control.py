@@ -11,6 +11,9 @@ def prev_tab():
 def close_tab():
     autopy.key.tap(autopy.key.K_F4, autopy.key.MOD_CONTROL)
 
+def click_at_loc(x,y):
+    autopy.mouse.move(x, y)
+    autopy.mouse.click()
 
 def test():
     import time
