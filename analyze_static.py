@@ -30,7 +30,7 @@ def findFingertips(image, light_thresh=100):
 
     # determine the most extreme points along the contour
     extremePoints = []
-    angleIndices = np.array([-120,-60,0])
+    angleIndices = np.array([-150,-75,0])
 
     while angleIndices[2] < len(handContour):
         # check if angle is greater than 130
@@ -54,3 +54,26 @@ def findFingertips(image, light_thresh=100):
 
         angleIndices += 1
     return handContour, extremePoints
+
+if __name__ == '__main__':
+    try:
+        imfilename = sys.argv[1]
+    except IndexError:
+        imfilename = "examples/peace.jpg"
+
+    # load the image, convert it to grayscale, and blur it slightly
+    image = cv2.imread(imfilename)
+
+    handContour, extremePoints = findFingertips(image)
+
+    cv2.drawContours(image, [handContour], -1, (0, 255, 255), 2)
+
+    for point in extremePoints:
+        cv2.circle(image, point, 8, (0, 0, 255), -1)
+    def main():
+        webcam = cv2.VideoCapture(0)
+
+    # show the output image
+    cv2.imshow("Image", image)
+    while cv2.waitKey(0) & 0xFF != ord('q'):
+        pass
