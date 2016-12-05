@@ -3,7 +3,7 @@ import analyze_static
 import control
 import time
 
-holdTime = 3
+holdTime = 1
 def main():
     webcam = cv2.VideoCapture(0)
     prevDirection = ''
@@ -13,44 +13,43 @@ def main():
         # Capture frame-by-frame
         _, frame = webcam.read()
 
-        curDirection = analyze_static.findFingertips(frame, 120)
+        curDirection = analyze_static.findFingertips(frame, 100)
 
         # Check if enough time has elapsed
         newTime = time.time()
 
-        if curDirection != prevDirection:
-            prevTime = newTime
-            alreadyPressed = False
-        elif newTime - prevTime > holdTime and not alreadyPressed and curDirection != '':
-            print 'Yaaay'
-            if curDirection =='w':
-                control.vid_pause()
-            elif curDirection == 'a':
-                control.vid_back()
-            elif curDirection == 'd':
-                control.vid_fwd()
-            elif curDirection == 's':
-                control.vid_pause()
-            alreadyPressed = True
+#        if curDirection != prevDirection:
+#            prevTime = newTime
+#            alreadyPressed = False
+#        elif newTime - prevTime > holdTime and not alreadyPressed and curDirection != '':
+#            print 'Yaaay'
+#            if curDirection =='w':
+#                control.vid_pause()
+#            elif curDirection == 'a':
+#                control.vid_back()
+#            elif curDirection == 'd':
+#                control.vid_fwd()
+#            elif curDirection == 's':
+#                control.vid_pause()
+#            alreadyPressed = True
+#
+#        prevDirection = curDirection
 
-        prevDirection = curDirection
-
-        #if newTime - prevTime >= holdTime:
-        #    if curDirection == prevDirection:
-        #        prevTime = newTime
-        #    else:
-        #        # If user hasn't, keep the old prevDirection
-        #        prevDirection = curDirection
-        #        prevTime = newTime
-        #        if curDirection =='w':
-        #            control.vid_pause()
-        #        elif curDirection == 'a':
-        #            control.vid_fwd()
-        #        elif curDirection == 'd':
-        #            control.vid_back()
-        #        elif curDirection == 's':
-        #            control.vid_pause()
-            
+        if newTime - prevTime >= holdTime:
+            if curDirection == prevDirection:
+                prevTime = newTime
+            else:
+                # If user hasn't, keep the old prevDirection
+                prevDirection = curDirection
+                prevTime = newTime
+                if curDirection =='w':
+                    control.vid_pause()
+                elif curDirection == 'a':
+                    control.vid_back()
+                elif curDirection == 'd':
+                    control.vid_fwd()
+                elif curDirection == 's':
+                    control.vid_pause()
         
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

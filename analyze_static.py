@@ -84,6 +84,8 @@ def findFingertips(image, light_thresh=100):
             cv2.circle(image, point, 5, (0, 0, 255), -1)
         cv2.putText(image, pointDir, (60, 60), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,0,255), 5)
 
+        image = cv2.resize(image, (500,500))
+
         # show the output image
         cv2.imshow("Image", image)
 
