@@ -22,15 +22,17 @@ def findFingertips(image, light_thresh=100):
     allContours = allContours[0] if imutils.is_cv2() else allContours[1]
 
     if len(allContours) == 0:
-        return np.array([]), []
+        return None,None
     handContour = max(allContours, key=cv2.contourArea)
 
-    if len(handContour) < 120:
+    curveLen = 75
+
+    if len(handContour) < 2*curveLen:
         return handContour, []
 
     # determine the most extreme points along the contour
     extremePoints = []
-    angleIndices = np.array([-150,-75,0])
+    angleIndices = np.array([-2*curveLen,-curveLen,0])
 
     while angleIndices[2] < len(handContour):
         # check if angle is greater than 130
