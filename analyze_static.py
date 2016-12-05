@@ -6,6 +6,8 @@ import cv2
 import sys
 import math
 import numpy as np
+import control
+
 def findFingertips(image, light_thresh=100):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (5, 5), 0)
@@ -22,13 +24,13 @@ def findFingertips(image, light_thresh=100):
     allContours = allContours[0] if imutils.is_cv2() else allContours[1]
 
     if len(allContours) == 0:
-        return None,None
+        return ''
     handContour = max(allContours, key=cv2.contourArea)
 
     curveLen = 75
 
     if len(handContour) < 2*curveLen:
-        return handContour, []
+        return ''
 
     # determine the most extreme points along the contour
     extremePoints = []
@@ -55,7 +57,37 @@ def findFingertips(image, light_thresh=100):
             extremePoints.append(tuple(points[1][0]))
 
         angleIndices += 1
-    return handContour, extremePoints
+    
+    if handContour is not None:
+        cv2.drawContours(image, [handContour], -1, (0, 255, 255), 2)
+
+        handContourMoments = cv2.moments(handContour)
+        handCenter = (int(handContourMoments['m10'] / handContourMoments['m00']),
+                      int(handContourMoments['m01'] / handContourMoments['m00']))
+
+        pointDir = ''
+        if len(extremePoints) > 0:
+            midExtremePoint = extremePoints[len(extremePoints)/2]
+            fingertipVec = (midExtremePoint[0] - handCenter[0], midExtremePoint[1] - handCenter[1])
+            if fingertipVec[1] > 100:
+                pointDir = 's'
+            elif fingertipVec[1] < -100:
+                pointDir = 'w'
+            elif fingertipVec[0] > 100:
+                pointDir = 'a'
+            elif fingertipVec[0] < -100:
+                pointDir = 'd'
+
+        # Draw interesting stuff
+        cv2.circle(image, handCenter, 10, (255, 0, 0), -1)
+        for point in extremePoints:
+            cv2.circle(image, point, 5, (0, 0, 255), -1)
+        cv2.putText(image, pointDir, (60, 60), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,0,255), 5)
+
+        # show the output image
+        cv2.imshow("Image", image)
+
+    return pointDir
 
 if __name__ == '__main__':
     try:

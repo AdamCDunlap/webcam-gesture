@@ -1,44 +1,57 @@
 import cv2
 import analyze_static
+import control
+import time
 
+holdTime = 3
 def main():
     webcam = cv2.VideoCapture(0)
+    prevDirection = ''
+    prevTime = time.time()
 
     while(True):
         # Capture frame-by-frame
         _, frame = webcam.read()
 
-        handContour, extremePoints = analyze_static.findFingertips(frame, 120)
+        curDirection = analyze_static.findFingertips(frame, 120)
 
-        if handContour is not None:
-            cv2.drawContours(frame, [handContour], -1, (0, 255, 255), 2)
+        # Check if enough time has elapsed
+        newTime = time.time()
 
-            handContourMoments = cv2.moments(handContour)
-            handCenter = (int(handContourMoments['m10'] / handContourMoments['m00']),
-                          int(handContourMoments['m01'] / handContourMoments['m00']))
+        if curDirection != prevDirection:
+            prevTime = newTime
+            alreadyPressed = False
+        elif newTime - prevTime > holdTime and not alreadyPressed and curDirection != '':
+            print 'Yaaay'
+            if curDirection =='w':
+                control.vid_pause()
+            elif curDirection == 'a':
+                control.vid_back()
+            elif curDirection == 'd':
+                control.vid_fwd()
+            elif curDirection == 's':
+                control.vid_pause()
+            alreadyPressed = True
 
-            pointDir = ''
-            if len(extremePoints) > 0:
-                midExtremePoint = extremePoints[len(extremePoints)/2]
-                fingertipVec = (midExtremePoint[0] - handCenter[0], midExtremePoint[1] - handCenter[1])
-                if fingertipVec[1] > 100:
-                    pointDir = 's'
-                elif fingertipVec[1] < -100:
-                    pointDir = 'w'
-                elif fingertipVec[0] > 100:
-                    pointDir = 'a'
-                elif fingertipVec[0] < -100:
-                    pointDir = 'd'
+        prevDirection = curDirection
 
-            # Draw interesting stuff
-            cv2.circle(frame, handCenter, 10, (255, 0, 0), -1)
-            for point in extremePoints:
-                cv2.circle(frame, point, 5, (0, 0, 255), -1)
-            cv2.putText(frame, pointDir, (60, 60), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,0,255), 5)
-
-        # show the output image
-        cv2.imshow("Image", frame)
-
+        #if newTime - prevTime >= holdTime:
+        #    if curDirection == prevDirection:
+        #        prevTime = newTime
+        #    else:
+        #        # If user hasn't, keep the old prevDirection
+        #        prevDirection = curDirection
+        #        prevTime = newTime
+        #        if curDirection =='w':
+        #            control.vid_pause()
+        #        elif curDirection == 'a':
+        #            control.vid_fwd()
+        #        elif curDirection == 'd':
+        #            control.vid_back()
+        #        elif curDirection == 's':
+        #            control.vid_pause()
+            
+        
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
