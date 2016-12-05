@@ -6,13 +6,13 @@ import cv2
 import sys
 import math
 import numpy as np
-def findFingertips(image):
+def findFingertips(image, light_thresh=100):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (5, 5), 0)
 
     # threshold the image, then perform a series of erosions +
     # dilations to remove any small regions of noise
-    thresh = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY)[1]
+    thresh = cv2.threshold(gray, light_thresh, 255, cv2.THRESH_BINARY)[1]
     thresh = cv2.erode(thresh, None, iterations=2)
     thresh = cv2.dilate(thresh, None, iterations=2)
 
@@ -22,7 +22,7 @@ def findFingertips(image):
     allContours = allContours[0] if imutils.is_cv2() else allContours[1]
 
     if len(allContours) == 0:
-        return [], []
+        return np.array([]), []
     handContour = max(allContours, key=cv2.contourArea)
 
     if len(handContour) < 120:
@@ -54,32 +54,3 @@ def findFingertips(image):
 
         angleIndices += 1
     return handContour, extremePoints
-
-
-
-def main():
-    webcam = cv2.VideoCapture(0)
-
-    while(True):
-        # Capture frame-by-frame
-        _, frame = webcam.read()
-
-        handContour, extremePoints = findFingertips(frame)
-
-        cv2.drawContours(frame, [handContour], -1, (0, 255, 255), 2)
-
-        for point in extremePoints:
-            cv2.circle(frame, point, 8, (0, 255, 255), -1)
-
-        # show the output image
-        cv2.imshow("Image", frame)
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    # When everything done, release the capture
-    webcam.release()
-    cv2.destroyAllWindows()
-
-if __name__ == '__main__':
-    main()
