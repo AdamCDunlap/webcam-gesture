@@ -37,13 +37,13 @@ def click_at_loc(x,y):
     autopy.mouse.click()
 
 def vid_pause():
-    autopy.key.tap(u'k')
+    autopy.key.tap('k')
 
 def vid_fwd():
-    autopy.key.tap(u'l')
+    autopy.key.tap('l')
 
 def vid_back():
-    autopy.key.tap(u'j')
+    autopy.key.tap('j')
 
 def test():
     import time

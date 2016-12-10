@@ -100,16 +100,15 @@ if __name__ == '__main__':
     # load the image, convert it to grayscale, and blur it slightly
     image = cv2.imread(imfilename)
 
-    handContour, extremePoints = findFingertips(image)
+    #handContour, extremePoints = findFingertips(image)
+    extremePoints = findFingertips(image)
 
-    cv2.drawContours(image, [handContour], -1, (0, 255, 255), 2)
+    #cv2.drawContours(image, [handContour], -1, (0, 255, 255), 2)
 
-    for point in extremePoints:
-        cv2.circle(image, point, 8, (0, 0, 255), -1)
-    def main():
-        webcam = cv2.VideoCapture(0)
+    #for point in extremePoints:
+    #    cv2.circle(image, point, 8, (0, 0, 255), -1)
 
     # show the output image
-    cv2.imshow("Image", image)
+    #cv2.imshow("Image", image)
     while cv2.waitKey(0) & 0xFF != ord('q'):
         pass
