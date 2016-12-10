@@ -8,29 +8,32 @@ import math
 import numpy as np
 import control
 
-def findFingertips(image, light_thresh=100):
+def findHand(image, light_thresh=100):
+
+
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (5, 5), 0)
 
     # threshold the image, then perform a series of erosions +
     # dilations to remove any small regions of noise
     thresh = cv2.threshold(gray, light_thresh, 255, cv2.THRESH_BINARY)[1]
-    thresh = cv2.erode(thresh, None, iterations=2)
-    thresh = cv2.dilate(thresh, None, iterations=2)
+    thresh = cv2.erode(thresh, None, iterations=4)
+    thresh = cv2.dilate(thresh, None, iterations=4)
 
     # find contours in thresholded image, then grab the largest
     # one
     allContours = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    allContours = allContours[0] if imutils.is_cv2() else allContours[1]
+    allContours = allContours[0]
 
     if len(allContours) == 0:
         return ''
     handContour = max(allContours, key=cv2.contourArea)
 
-    curveLen = 75
+    return handContour
 
+def findFingertips(handContour, curveLen = 75, curveAngleThresh = 50):
     if len(handContour) < 2*curveLen:
-        return ''
+        return []
 
     # determine the most extreme points along the contour
     extremePoints = []
@@ -53,43 +56,55 @@ def findFingertips(image, light_thresh=100):
         while ang > 360:
             ang -= 360
 
-        if ang < 50:
+        if ang < curveAngleThresh:
             extremePoints.append(tuple(points[1][0]))
 
         angleIndices += 1
-    
-    if handContour is not None:
-        cv2.drawContours(image, [handContour], -1, (0, 255, 255), 2)
 
-        handContourMoments = cv2.moments(handContour)
-        handCenter = (int(handContourMoments['m10'] / handContourMoments['m00']),
-                      int(handContourMoments['m01'] / handContourMoments['m00']))
+    return extremePoints
 
-        pointDir = ''
-        if len(extremePoints) > 0:
-            midExtremePoint = extremePoints[len(extremePoints)/2]
-            fingertipVec = (midExtremePoint[0] - handCenter[0], midExtremePoint[1] - handCenter[1])
-            if fingertipVec[1] > 100:
-                pointDir = 's'
-            elif fingertipVec[1] < -100:
-                pointDir = 'w'
-            elif fingertipVec[0] > 100:
-                pointDir = 'a'
-            elif fingertipVec[0] < -100:
-                pointDir = 'd'
+def getHandCenter(handContour):
+    handContourMoments = cv2.moments(handContour)
+    return (int(handContourMoments['m10'] / handContourMoments['m00']),
+            int(handContourMoments['m01'] / handContourMoments['m00']))
 
-        # Draw interesting stuff
-        cv2.circle(image, handCenter, 10, (255, 0, 0), -1)
-        for point in extremePoints:
-            cv2.circle(image, point, 5, (0, 0, 255), -1)
-        cv2.putText(image, pointDir, (60, 60), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,0,255), 5)
+def findFingerDirection(handCenter, fingerLoc):
+    ''' Returns strings either 'w' 'a' 's' or 'd'
+    '''
+    fingertipVec = (fingerLoc[0] - handCenter[0], fingerLoc[1] - handCenter[1])
+    if fingertipVec[1] > 100:
+        return 's'
+    elif fingertipVec[1] < -100:
+        return 'w'
+    elif fingertipVec[0] > 100:
+        return 'a'
+    elif fingertipVec[0] < -100:
+        return 'd'
 
-        image = cv2.resize(image, (500,500))
+def showFingertips(image, handContour, fingertips, handCenter, fDir):
+    cv2.drawContours(image, [handContour], -1, (0, 255, 255), 2)
 
-        # show the output image
-        cv2.imshow("Image", image)
+    # Draw interesting stuff
+    cv2.circle(image, handCenter, 10, (255, 0, 0), -1)
+    for point in fingertips:
+        cv2.circle(image, point, 5, (0, 0, 255), -1)
+    cv2.putText(image, fDir, (60, 60), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,0,255), 5)
 
-    return pointDir
+    image = cv2.resize(image, (500,500))
+
+    # show the output image
+    cv2.imshow("Image", image)
+
+def extract_and_show_fingertips(image):
+    handContour = findHand(image)
+    fingertips = findFingertips(handContour)
+    if len(fingertips) > 0:
+        middleTip = fingertips[len(fingertips)/2]
+        handCenter = getHandCenter(handContour)
+        fdir = findFingerDirection(handCenter, middleTip)
+        showFingertips(image, handContour, fingertips, handCenter, fdir)
+        return fdir
+    return ''
 
 if __name__ == '__main__':
     try:
@@ -97,18 +112,9 @@ if __name__ == '__main__':
     except IndexError:
         imfilename = "examples/peace.jpg"
 
-    # load the image, convert it to grayscale, and blur it slightly
     image = cv2.imread(imfilename)
 
-    #handContour, extremePoints = findFingertips(image)
-    extremePoints = findFingertips(image)
+    extract_and_show_fingertips(image)
 
-    #cv2.drawContours(image, [handContour], -1, (0, 255, 255), 2)
-
-    #for point in extremePoints:
-    #    cv2.circle(image, point, 8, (0, 0, 255), -1)
-
-    # show the output image
-    #cv2.imshow("Image", image)
     while cv2.waitKey(0) & 0xFF != ord('q'):
         pass

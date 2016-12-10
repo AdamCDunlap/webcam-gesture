@@ -13,7 +13,7 @@ def main():
         # Capture frame-by-frame
         _, frame = webcam.read()
 
-        curDirection = analyze_static.findFingertips(frame, 100)
+        curDirection = analyze_static.extract_and_show_fingertips(frame)
 
         # Check if enough time has elapsed
         newTime = time.time()
