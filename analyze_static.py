@@ -8,11 +8,13 @@ import math
 import numpy as np
 import control
 
-def findHand(image, light_thresh=100):
-
-
+def findHand(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    minGray = np.amin(gray)
+    maxGray = np.amax(gray)
+    light_thresh = (minGray + maxGray) / 2 - 10
 
     # threshold the image, then perform a series of erosions +
     # dilations to remove any small regions of noise
@@ -26,7 +28,7 @@ def findHand(image, light_thresh=100):
     allContours = allContours[0]
 
     if len(allContours) == 0:
-        return ''
+        return None
     handContour = max(allContours, key=cv2.contourArea)
 
     return handContour
@@ -85,7 +87,8 @@ def showFingertips(image, handContour, fingertips, handCenter, fDir):
     cv2.drawContours(image, [handContour], -1, (0, 255, 255), 2)
 
     # Draw interesting stuff
-    cv2.circle(image, handCenter, 10, (255, 0, 0), -1)
+    if handCenter:
+        cv2.circle(image, handCenter, 10, (255, 0, 0), -1)
     for point in fingertips:
         cv2.circle(image, point, 5, (0, 0, 255), -1)
     cv2.putText(image, fDir, (60, 60), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,0,255), 5)
@@ -97,14 +100,20 @@ def showFingertips(image, handContour, fingertips, handCenter, fDir):
 
 def extract_and_show_fingertips(image):
     handContour = findHand(image)
-    fingertips = findFingertips(handContour)
-    if len(fingertips) > 0:
-        middleTip = fingertips[len(fingertips)/2]
+
+    fdir = ''
+    fingertips = []
+    handCenter = None
+    if handContour is not None:
+        fingertips = findFingertips(handContour)
         handCenter = getHandCenter(handContour)
-        fdir = findFingerDirection(handCenter, middleTip)
-        showFingertips(image, handContour, fingertips, handCenter, fdir)
-        return fdir
-    return ''
+
+        if len(fingertips) > 0:
+            middleTip = fingertips[len(fingertips)/2]
+            fdir = findFingerDirection(handCenter, middleTip)
+
+    showFingertips(image, handContour, fingertips, handCenter, fdir)
+    return fdir
 
 if __name__ == '__main__':
     try:
