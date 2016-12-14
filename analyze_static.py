@@ -14,7 +14,9 @@ def findHand(image):
 
     minGray = np.amin(gray)
     maxGray = np.amax(gray)
-    light_thresh = (minGray + maxGray) / 2 - 10
+
+    #light_thresh = minGray + (maxGray - minGray) / 2
+    light_thresh = np.average(gray) + 40
 
     # threshold the image, then perform a series of erosions +
     # dilations to remove any small regions of noise
@@ -33,7 +35,7 @@ def findHand(image):
 
     return handContour
 
-def findFingertips(handContour, curveLen = 75, curveAngleThresh = 50):
+def findSharpPoints(handContour, curveLen = 75, curveAngleThresh = 50):
     if len(handContour) < 2*curveLen:
         return []
 
@@ -65,6 +67,42 @@ def findFingertips(handContour, curveLen = 75, curveAngleThresh = 50):
 
     return extremePoints
 
+def eDist(a,b):
+    ''' Returns euclidean distance from a to b
+    '''
+
+    xd = a[0] - b[0]
+    yd = a[1] - b[1]
+    return math.sqrt(xd*xd + yd*yd)
+
+def filterFingertips(sharpPoints, distThresh = 50):
+    ''' List of sharp points should be in order
+
+    Might return two next two each other if a a cluster spans from the end of
+    the list to the beginning
+    '''
+
+    if len(sharpPoints) == 0:
+        return []
+
+    lastPoint = sharpPoints[0]
+
+    centers = []
+
+    clusteredPoints = [lastPoint]
+    for p in sharpPoints[1:]:
+        if eDist(lastPoint, p) > distThresh:
+            # We're starting a new cluster
+            centers.append(clusteredPoints[len(clusteredPoints)/2])
+            clusteredPoints[:] = []
+        clusteredPoints.append(p)
+        lastPoint = p
+    if len(clusteredPoints) > 0:
+        centers.append(clusteredPoints[len(clusteredPoints)/2])
+
+    return centers
+
+
 def getHandCenter(handContour):
     handContourMoments = cv2.moments(handContour)
     return (int(handContourMoments['m10'] / handContourMoments['m00']),
@@ -83,17 +121,19 @@ def findFingerDirection(handCenter, fingerLoc):
     elif fingertipVec[0] < -100:
         return 'd'
 
-def showFingertips(image, handContour, fingertips, handCenter, fDir):
+def showFingertips(image, handContour, fingertips, handCenter, fDir, sharpPoints):
     cv2.drawContours(image, [handContour], -1, (0, 255, 255), 2)
 
     # Draw interesting stuff
     if handCenter:
         cv2.circle(image, handCenter, 10, (255, 0, 0), -1)
+    for point in sharpPoints:
+        cv2.circle(image, point, 3, (100, 100, 0), -1)
     for point in fingertips:
-        cv2.circle(image, point, 5, (0, 0, 255), -1)
+        cv2.circle(image, point, 10, (0, 0, 255), -1)
     cv2.putText(image, fDir, (60, 60), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,0,255), 5)
 
-    image = cv2.resize(image, (500,500))
+    #image = cv2.resize(image, (500,500))
 
     # show the output image
     cv2.imshow("Image", image)
@@ -103,16 +143,18 @@ def extract_and_show_fingertips(image):
 
     fdir = ''
     fingertips = []
+    sharpPoints = []
     handCenter = None
     if handContour is not None:
-        fingertips = findFingertips(handContour)
+        sharpPoints = findSharpPoints(handContour)
+        fingertips = filterFingertips(sharpPoints)
         handCenter = getHandCenter(handContour)
 
         if len(fingertips) > 0:
             middleTip = fingertips[len(fingertips)/2]
             fdir = findFingerDirection(handCenter, middleTip)
 
-    showFingertips(image, handContour, fingertips, handCenter, fdir)
+    showFingertips(image, handContour, fingertips, handCenter, fdir, sharpPoints)
     return fdir
 
 if __name__ == '__main__':
