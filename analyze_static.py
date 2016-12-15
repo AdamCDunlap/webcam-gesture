@@ -120,6 +120,7 @@ def findFingerDirection(handCenter, fingerLoc):
         return 'a'
     elif fingertipVec[0] < -100:
         return 'd'
+    return ''
 
 def showFingertips(image, handContour, fingertips, handCenter, fDir, sharpPoints):
     cv2.drawContours(image, [handContour], -1, (0, 255, 255), 2)
@@ -139,6 +140,10 @@ def showFingertips(image, handContour, fingertips, handCenter, fDir, sharpPoints
     cv2.imshow("Image", image)
 
 def extract_and_show_fingertips(image):
+    ''' Returns strings, one letter per finger, each letter either w, a, s, or
+        d.
+    '''
+
     handContour = findHand(image)
 
     fdir = ''
@@ -150,11 +155,11 @@ def extract_and_show_fingertips(image):
         fingertips = filterFingertips(sharpPoints)
         handCenter = getHandCenter(handContour)
 
-        if len(fingertips) > 0:
-            middleTip = fingertips[len(fingertips)/2]
-            fdir = findFingerDirection(handCenter, middleTip)
+        for ftip in fingertips:
+            fdir += findFingerDirection(handCenter, ftip)
 
     showFingertips(image, handContour, fingertips, handCenter, fdir, sharpPoints)
+
     return fdir
 
 if __name__ == '__main__':
